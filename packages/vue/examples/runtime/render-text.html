@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="../../dist/vue.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+  </body>
+  <script>
+    const { reactive, h, Text, render } = Vue
+
+    const vnode = h(Text, "hello render")
+
+    render(vnode, document.querySelector("#app"))
+
+    setTimeout(() => {
+      const vnode = h(Text, "update")
+
+      render(vnode, document.querySelector("#app"))
+    }, 2000)
+  </script>
+
+  <style>
+    .active {
+      color: red;
+    }
+  </style>
+</html>
