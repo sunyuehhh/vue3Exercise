@@ -366,7 +366,7 @@ var Vue = (function (exports) {
     function applyOptions(instance) {
         const { data: dataOptions, beforeCreate, created, beforeMount, mounted, } = instance.type;
         if (beforeCreate) {
-            callHook(beforeCreate);
+            callHook(beforeCreate, instance.data);
         }
         if (dataOptions) {
             const data = dataOptions();
@@ -375,16 +375,16 @@ var Vue = (function (exports) {
             }
         }
         if (created) {
-            callHook(created);
+            callHook(created, instance.data);
         }
         function registerLifecycleHook(register, hook) {
-            register(hook, instance);
+            register(hook === null || hook === void 0 ? void 0 : hook.bind(instance.data), instance);
         }
         registerLifecycleHook(onBeforeMount, beforeMount);
         registerLifecycleHook(onMounted, mounted);
     }
-    function callHook(hook) {
-        hook();
+    function callHook(hook, proxy) {
+        hook.bind(proxy)();
     }
 
     function renderComponentRoot(instance) {
