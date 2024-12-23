@@ -321,6 +321,18 @@ var Vue = (function (exports) {
         }
     }
 
+    function injectHook(type, hook, target) {
+        if (target) {
+            target[type] = hook;
+            return hook;
+        }
+    }
+    const createHook = (lifecycle) => {
+        return (hook, target) => injectHook(lifecycle, hook, target);
+    };
+    const onBeforeMount = createHook("bc" /* LifecycleHooks.BEFORE_CREATE */);
+    const onMounted = createHook("m" /* LifecycleHooks.MOUNTED */);
+
     let uid = 0;
     function createComponentInstance(vnode) {
         const type = vnode.type;
@@ -332,6 +344,11 @@ var Vue = (function (exports) {
             effect: null,
             update: null,
             render: null,
+            isMounted: false,
+            bc: null,
+            c: null,
+            bm: null,
+            m: null,
         };
         return instance;
     }
@@ -347,13 +364,27 @@ var Vue = (function (exports) {
         applyOptions(instance);
     }
     function applyOptions(instance) {
-        const { data: dataOptions } = instance.type;
+        const { data: dataOptions, beforeCreate, created, beforeMount, mounted, } = instance.type;
+        if (beforeCreate) {
+            callHook(beforeCreate);
+        }
         if (dataOptions) {
             const data = dataOptions();
             if (isObject(data)) {
                 instance.data = reactive(data);
             }
         }
+        if (created) {
+            callHook(created);
+        }
+        function registerLifecycleHook(register, hook) {
+            register(hook, instance);
+        }
+        registerLifecycleHook(onBeforeMount, beforeMount);
+        registerLifecycleHook(onMounted, mounted);
+    }
+    function callHook(hook) {
+        hook();
     }
 
     function renderComponentRoot(instance) {
@@ -403,8 +434,15 @@ var Vue = (function (exports) {
         const setupRenderEffect = (instance, initialVNode, container, anchor) => {
             const componentUpdateFn = () => {
                 if (!instance.isMounted) {
+                    const { bm, m } = instance;
+                    if (bm) {
+                        bm();
+                    }
                     const subTree = (instance.subTree = renderComponentRoot(instance));
                     patch(null, subTree, container, anchor);
+                    if (m) {
+                        m();
+                    }
                     initialVNode.el = subTree.el;
                 }
             };
