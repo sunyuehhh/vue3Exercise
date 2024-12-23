@@ -86,6 +86,7 @@ var Vue = (function (exports) {
      * @param dep
      */
     function triggerEffects(dep) {
+        console.log(dep, "dep");
         const effects = isArray(dep) ? dep : [...dep];
         // 依次触发依赖
         for (const effect of effects) {
@@ -236,9 +237,6 @@ var Vue = (function (exports) {
         }
         const cRef = new ComputedRefImpl(getter);
         return cRef;
-    }
-
-    function queuePreFlushCb(cb) {
     }
 
     const Fragment = Symbol("Fragment");
@@ -433,6 +431,7 @@ var Vue = (function (exports) {
         };
         const setupRenderEffect = (instance, initialVNode, container, anchor) => {
             const componentUpdateFn = () => {
+                console.log("执行", instance);
                 if (!instance.isMounted) {
                     const { bm, m } = instance;
                     if (bm) {
@@ -444,9 +443,21 @@ var Vue = (function (exports) {
                         m();
                     }
                     initialVNode.el = subTree.el;
+                    instance.isMounted = true;
+                }
+                else {
+                    let { next, vnode } = instance;
+                    if (!next) {
+                        next = vnode;
+                    }
+                    const nextTree = renderComponentRoot(instance);
+                    const prevTree = instance.subTree;
+                    instance.subTree = nextTree;
+                    patch(prevTree, nextTree, container, anchor);
+                    next.el = nextTree.el;
                 }
             };
-            const effect = (instance.effect = new ReactiveEffect(componentUpdateFn, () => queuePreFlushCb(update)));
+            const effect = (instance.effect = new ReactiveEffect(componentUpdateFn));
             const update = (instance.update = () => effect.run());
             update();
         };

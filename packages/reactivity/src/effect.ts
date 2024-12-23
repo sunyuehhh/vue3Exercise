@@ -71,6 +71,7 @@ export function trigger(target: object, key: unknown, newValue: unknown) {
  * @param dep
  */
 export function triggerEffects(dep: Dep) {
+  console.log(dep, "dep")
   const effects = isArray(dep) ? dep : [...dep]
   // 依次触发依赖
   for (const effect of effects) {

@@ -49,6 +49,7 @@ function baseCreateRenderer(options: RendererOptions): any {
 
   const setupRenderEffect = (instance, initialVNode, container, anchor) => {
     const componentUpdateFn = () => {
+      console.log("执行", instance)
       if (!instance.isMounted) {
         const { bm, m } = instance
         if (bm) {
@@ -62,14 +63,23 @@ function baseCreateRenderer(options: RendererOptions): any {
         }
 
         initialVNode.el = subTree.el
+
+        instance.isMounted = true
       } else {
+        let { next, vnode } = instance
+        if (!next) {
+          next = vnode
+        }
+
+        const nextTree = renderComponentRoot(instance)
+        const prevTree = instance.subTree
+        instance.subTree = nextTree
+        patch(prevTree, nextTree, container, anchor)
+        next.el = nextTree.el
       }
     }
 
-    const effect = (instance.effect = new ReactiveEffect(
-      componentUpdateFn,
-      () => queuePreFlushCb(update)
-    ))
+    const effect = (instance.effect = new ReactiveEffect(componentUpdateFn))
 
     const update = (instance.update = () => effect.run())
 
