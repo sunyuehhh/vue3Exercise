@@ -1,6 +1,7 @@
 import { reactive } from "@vue/reactivity"
 import { isObject } from "@vue/shared"
 import { onBeforeMount, onMounted } from "./apiLifecycle"
+import { isFunction } from "@vue/shared"
 
 export const enum LifecycleHooks {
   BEFORE_CREATE = "bc",
@@ -35,13 +36,31 @@ export function setupComponent(instance) {
 }
 
 function setupStatefulComponent(instance) {
+  const Component = instance.type
+
+  const { setup } = Component
+  if (setup) {
+    // Composition API
+    const setupResult = setup()
+    handleSetupResult(instance, setupResult)
+  } else {
+    // Option API
+    finishComponentSetup(instance)
+  }
+}
+
+export function handleSetupResult(instance, setupResult) {
+  if (isFunction(setupResult)) {
+    instance.render = setupResult
+  }
   finishComponentSetup(instance)
 }
 
 export function finishComponentSetup(instance) {
   const Component = instance.type
-  instance.render = Component.render
-
+  if (!instance.render) {
+    instance.render = Component.render
+  }
   applyOptions(instance)
 }
 
