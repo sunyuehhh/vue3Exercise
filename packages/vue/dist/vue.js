@@ -627,7 +627,14 @@ var Vue = (function (exports) {
                     }
                 }
             }
-            // 4.common  sequence+unmount
+            else if (i > newChildrenEnd) {
+                // 4.common  sequence+unmount
+                while (i <= oldChildrenEnd) {
+                    // 场景4:旧节点多于新节点
+                    unmount(oldChildren[i]);
+                    i++;
+                }
+            }
         };
         const patchProps = (el, vnode, oldProps, newProps) => {
             if (oldProps !== newProps) {

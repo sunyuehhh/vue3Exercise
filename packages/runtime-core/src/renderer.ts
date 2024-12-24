@@ -261,9 +261,14 @@ function baseCreateRenderer(options: RendererOptions): any {
           i++
         }
       }
+    } else if (i > newChildrenEnd) {
+      // 4.common  sequence+unmount
+      while (i <= oldChildrenEnd) {
+        // 场景4:旧节点多于新节点
+        unmount(oldChildren[i])
+        i++
+      }
     }
-
-    // 4.common  sequence+unmount
   }
 
   const patchProps = (el: Element, vnode, oldProps, newProps) => {
