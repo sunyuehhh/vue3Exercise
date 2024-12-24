@@ -288,7 +288,8 @@ var Vue = (function (exports) {
         return value ? value.__v_isRef == true : false;
     }
     function isSameVNodeType(n1, n2) {
-        return n1.type === n2.type && n1.key === n2.key;
+        var _a, _b;
+        return n1.type === n2.type && ((_a = n1 === null || n1 === void 0 ? void 0 : n1.props) === null || _a === void 0 ? void 0 : _a.key) === ((_b = n2 === null || n2 === void 0 ? void 0 : n2.props) === null || _b === void 0 ? void 0 : _b.key);
     }
 
     function h(type, propsOrChildren, children) {
@@ -535,7 +536,7 @@ var Vue = (function (exports) {
             const el = (newVNode.el = oldVNode.el);
             const oldProps = oldVNode.props || EMPTY_OBJ;
             const newProps = newVNode.props || EMPTY_OBJ;
-            patchChildren(oldVNode, newVNode, el);
+            patchChildren(oldVNode, newVNode, el, null);
             patchProps(el, newVNode, oldProps, newProps);
         };
         const mountChildren = (children, container, anchor) => {
@@ -565,7 +566,7 @@ var Vue = (function (exports) {
                     if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
                         // 新节点是array
                         // TODO:diff运算
-                        patchKeyChildren(c1, c2, container);
+                        patchKeyChildren(c1, c2, container, anchor);
                     }
                 }
                 else {
@@ -581,13 +582,14 @@ var Vue = (function (exports) {
         };
         const patchKeyChildren = (oldChildren, newChildren, container, parentAnchor) => {
             let i = 0;
-            newChildren.length;
+            const newChildrenLength = newChildren.length;
             let oldChildrenEnd = oldChildren.length - 1;
             let newChildrenEnd = newChildren.length - 1;
             // 1.自前向后
-            while (i < oldChildrenEnd && i < newChildrenEnd) {
+            while (i <= oldChildrenEnd && i <= newChildrenEnd) {
                 const oldVNode = oldChildren[i];
                 const newVNode = normalizeVNode(newChildren[i]);
+                console.log(isSameVNodeType(oldVNode, newVNode), "*********");
                 if (isSameVNodeType(oldVNode, newVNode)) {
                     patch(oldVNode, newVNode, container, null);
                 }
@@ -596,6 +598,36 @@ var Vue = (function (exports) {
                 }
                 i++;
             }
+            // 2.自后向前
+            while (i <= oldChildrenEnd && i <= newChildrenEnd) {
+                const oldVNode = oldChildren[oldChildrenEnd];
+                const newVNode = newChildren[newChildrenEnd];
+                if (isSameVNodeType(oldVNode, newVNode)) {
+                    patch(oldVNode, newVNode, container, null);
+                }
+                else {
+                    break;
+                }
+                oldChildrenEnd--;
+                newChildrenEnd--;
+            }
+            // 3.common    sequence+mount
+            // (a b)
+            // (a b) c
+            // 新节点多余旧节点时的一个diff比对
+            if (i > oldChildrenEnd) {
+                if (i <= newChildrenEnd) {
+                    // 新节点多余旧节点
+                    // 找新节点插入锚点的位置
+                    const nextPos = newChildrenEnd + 1;
+                    const anchor = nextPos < newChildrenLength ? newChildren[nextPos] : parentAnchor;
+                    while (i <= newChildrenEnd) {
+                        patch(null, normalizeVNode(newChildren[i]), container, anchor);
+                        i++;
+                    }
+                }
+            }
+            // 4.common  sequence+unmount
         };
         const patchProps = (el, vnode, oldProps, newProps) => {
             if (oldProps !== newProps) {

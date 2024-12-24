@@ -216,9 +216,11 @@ function baseCreateRenderer(options: RendererOptions): any {
     let newChildrenEnd = newChildren.length - 1
 
     // 1.自前向后
-    while (i < oldChildrenEnd && i < newChildrenEnd) {
+    while (i <= oldChildrenEnd && i <= newChildrenEnd) {
       const oldVNode = oldChildren[i]
       const newVNode = normalizeVNode(newChildren[i])
+
+      console.log(isSameVNodeType(oldVNode, newVNode), "*********")
 
       if (isSameVNodeType(oldVNode, newVNode)) {
         patch(oldVNode, newVNode, container, null)
@@ -227,6 +229,41 @@ function baseCreateRenderer(options: RendererOptions): any {
       }
       i++
     }
+
+    // 2.自后向前
+    while (i <= oldChildrenEnd && i <= newChildrenEnd) {
+      const oldVNode = oldChildren[oldChildrenEnd]
+      const newVNode = newChildren[newChildrenEnd]
+      if (isSameVNodeType(oldVNode, newVNode)) {
+        patch(oldVNode, newVNode, container, null)
+      } else {
+        break
+      }
+      oldChildrenEnd--
+      newChildrenEnd--
+    }
+
+    // 3.common    sequence+mount
+    // (a b)
+    // (a b) c
+    // 新节点多余旧节点时的一个diff比对
+    if (i > oldChildrenEnd) {
+      if (i <= newChildrenEnd) {
+        // 新节点多余旧节点
+
+        // 找新节点插入锚点的位置
+        const nextPos = newChildrenEnd + 1
+        const anchor =
+          nextPos < newChildrenLength ? newChildren[nextPos] : parentAnchor
+
+        while (i <= newChildrenEnd) {
+          patch(null, normalizeVNode(newChildren[i]), container, anchor)
+          i++
+        }
+      }
+    }
+
+    // 4.common  sequence+unmount
   }
 
   const patchProps = (el: Element, vnode, oldProps, newProps) => {

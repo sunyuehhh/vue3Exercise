@@ -68,5 +68,5 @@ export function isVNode(value: any): value is VNode {
 }
 
 export function isSameVNodeType(n1: VNode, n2: VNode) {
-  return n1.type === n2.type && n1.key === n2.key
+  return n1.type === n2.type && n1?.props?.key === n2?.props?.key
 }
