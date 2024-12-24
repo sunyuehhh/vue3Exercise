@@ -521,6 +521,9 @@ var Vue = (function (exports) {
             if (shapeFlag & 8 /* ShapeFlags.TEXT_CHILDREN */) {
                 hostSetElementText(el, vnode.children);
             }
+            else if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+                mountChildren(vnode.children, el, anchor);
+            }
             if (props) {
                 for (const key in props) {
                     hostPatchProp(el, key, null, props[key]);
@@ -535,6 +538,15 @@ var Vue = (function (exports) {
             patchChildren(oldVNode, newVNode, el);
             patchProps(el, newVNode, oldProps, newProps);
         };
+        const mountChildren = (children, container, anchor) => {
+            if (isString(children)) {
+                children = children.split("");
+            }
+            for (let i = 0; i < children.length; i++) {
+                const child = (children[i] = normalizeVNode(children[i]));
+                patch(null, child, container, anchor);
+            }
+        };
         const patchChildren = (oldVNode, newVNode, container, anchor) => {
             console.log(oldVNode, newVNode, "patchChildren");
             const c1 = oldVNode && oldVNode.children;
@@ -548,7 +560,14 @@ var Vue = (function (exports) {
                 }
             }
             else {
-                if (prevShapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) ;
+                if (prevShapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+                    // 新节点不是text  旧节点是array
+                    if (shapeFlag & 16 /* ShapeFlags.ARRAY_CHILDREN */) {
+                        // 新节点是array
+                        // TODO:diff运算
+                        patchKeyChildren(c1, c2, container);
+                    }
+                }
                 else {
                     // 旧节点不是array
                     if (prevShapeFlag & 8 /* ShapeFlags.TEXT_CHILDREN */) {
@@ -558,6 +577,24 @@ var Vue = (function (exports) {
                         hostSetElementText(container, "");
                     }
                 }
+            }
+        };
+        const patchKeyChildren = (oldChildren, newChildren, container, parentAnchor) => {
+            let i = 0;
+            newChildren.length;
+            let oldChildrenEnd = oldChildren.length - 1;
+            let newChildrenEnd = newChildren.length - 1;
+            // 1.自前向后
+            while (i < oldChildrenEnd && i < newChildrenEnd) {
+                const oldVNode = oldChildren[i];
+                const newVNode = normalizeVNode(newChildren[i]);
+                if (isSameVNodeType(oldVNode, newVNode)) {
+                    patch(oldVNode, newVNode, container, null);
+                }
+                else {
+                    break;
+                }
+                i++;
             }
         };
         const patchProps = (el, vnode, oldProps, newProps) => {

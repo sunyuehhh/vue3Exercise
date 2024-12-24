@@ -1,8 +1,8 @@
-import { ShapeFlags } from "@vue/shared"
+import { ShapeFlags, isString } from "@vue/shared"
 import { Fragment, isSameVNodeType, Text } from "./vnode"
 import { createComponentInstance, setupComponent } from "./component"
 import { ReactiveEffect, queuePreFlushCb } from "@vue/reactivity"
-import { renderComponentRoot } from "./componentRenderUtils"
+import { normalizeVNode, renderComponentRoot } from "./componentRenderUtils"
 export const EMPTY_OBJ = {}
 export interface RendererOptions {
   patchProp(el: Element, key: string, prevValue: any, nextValue: any): void
@@ -126,6 +126,7 @@ function baseCreateRenderer(options: RendererOptions): any {
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
       hostSetElementText(el, vnode.children)
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      mountChildren(vnode.children, el, anchor)
     }
 
     if (props) {
@@ -145,6 +146,17 @@ function baseCreateRenderer(options: RendererOptions): any {
     patchChildren(oldVNode, newVNode, el, null)
 
     patchProps(el, newVNode, oldProps, newProps)
+  }
+
+  const mountChildren = (children, container, anchor) => {
+    if (isString(children)) {
+      children = children.split("")
+    }
+
+    for (let i = 0; i < children.length; i++) {
+      const child = (children[i] = normalizeVNode(children[i]))
+      patch(null, child, container, anchor)
+    }
   }
 
   const patchChildren = (oldVNode, newVNode, container, anchor) => {
@@ -170,6 +182,7 @@ function baseCreateRenderer(options: RendererOptions): any {
         if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
           // 新节点是array
           // TODO:diff运算
+          patchKeyChildren(c1, c2, container, anchor)
         } else {
           // 新节点也不是array
           // TODO:卸载
@@ -188,6 +201,31 @@ function baseCreateRenderer(options: RendererOptions): any {
           //TODO: 单独新子节点的挂载
         }
       }
+    }
+  }
+
+  const patchKeyChildren = (
+    oldChildren,
+    newChildren,
+    container,
+    parentAnchor
+  ) => {
+    let i = 0
+    const newChildrenLength = newChildren.length
+    let oldChildrenEnd = oldChildren.length - 1
+    let newChildrenEnd = newChildren.length - 1
+
+    // 1.自前向后
+    while (i < oldChildrenEnd && i < newChildrenEnd) {
+      const oldVNode = oldChildren[i]
+      const newVNode = normalizeVNode(newChildren[i])
+
+      if (isSameVNodeType(oldVNode, newVNode)) {
+        patch(oldVNode, newVNode, container, null)
+      } else {
+        break
+      }
+      i++
     }
   }
 
